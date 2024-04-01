@@ -58,6 +58,38 @@ router.get('/wishlist', async (req,res) => {
         // Retrieve the logged-in user's ID from the session or request object
         const userId = req.session.user_id; // Fallback to 1 for testing
 
+                let userDetails = await User.findByPk(req.session.user_id, {
+            include: [
+                {
+                    model: Country,
+                    attributes: ["country_name", "country_emoji"],
+                },
+                {
+                    model: Ratings,
+                },
+                {
+                    model: Like
+                },
+                {
+                    model: Snack
+                },
+            ]
+        });
+
+        const serialisedData = userDetails.get({ plain: true });
+        console.log(serialisedData);
+
+        let dashboardData = {
+            username: serialisedData.username,
+            user_country: serialisedData.country.country_name,
+            country_emoji: serialisedData.country.country_emoji,
+            numRatings: serialisedData.ratings.length,
+            numLikes: serialisedData.likes.length,
+            profile_picture: serialisedData.profile_picture,
+            submittedSnacks: serialisedData.Snacks.length,
+            logged_in: req.session.logged_in,
+        }; 
+
         const wishData = await User.findAll({
             where: { id: userId },
             attributes: ['id'], 
@@ -73,9 +105,7 @@ router.get('/wishlist', async (req,res) => {
         const newData = wishData.map(wishdata => wishdata.get({ plain: true }));
         
         const wdata = newData[0].FavouriteSnacks;
-        res.render('dashboard_wishes', {wdata, logged_in: req.session.logged_in});
-
-        
+        res.render('dashboard_wishes', {dashboardData, wdata });
 
 
         // res.json(newData[0].FavouriteSnacks);
